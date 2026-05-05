@@ -3,7 +3,7 @@ use crate::backend::{
         comptime_variable_checker::comptime_value_for_check::ComptimeValueType,
         instructions::Instructions::{self, Halt},
     },
-    linker::{obj_file::ObjFile, patch_objs, sort_objs::sort_objs_bfs},
+    linker::{obj_file::ObjFile, patch_objs::patch_objs_jumps, sort_objs::sort_objs_bfs},
 };
 use std::collections::HashMap;
 
@@ -22,16 +22,20 @@ pub struct Symbol {
     pub is_constant: bool,
     pub tag: String,
 }
+pub struct Linker<'a> {
+    objects: &'a mut Vec<ObjFile>,
+}
 
-pub struct Linker;
-
-impl Linker {
+impl<'a> Linker<'a> {
+    pub fn new(objects: &'a mut Vec<ObjFile>) -> Self {
+        Self { objects }
+    }
     pub fn link(objects: &mut Vec<ObjFile>) -> Vec<Instructions> {
         // Sort objs
         let mut program: Vec<Instructions> = Vec::new();
-        let sorted_objects = sort_objs_bfs(objects).unwrap();
+        sort_objs_bfs(objects).unwrap();
         // Patch jump adresses
-        patch_objs::patch_objs_jumps(sorted_objects, &mut program);
+        patch_objs_jumps(objects.to_vec(), &mut program);
         program.push(Halt); // Final Halt of a program
         program
     }

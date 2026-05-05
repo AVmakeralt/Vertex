@@ -1,7 +1,7 @@
 use crate::backend::errors::linker::linker_errors::LinkerError;
 use crate::backend::linker::obj_file::ObjFile;
 use std::collections::{HashMap, VecDeque};
-pub fn sort_objs_bfs(objs: &mut Vec<ObjFile>) -> Result<Vec<ObjFile>, LinkerError> {
+pub fn sort_objs_bfs(objs: &mut Vec<ObjFile>) -> Result<(), LinkerError> {
     let mut obj_map: HashMap<String, ObjFile> =
         objs.drain(..).map(|o| (o.name.clone(), o)).collect();
 
@@ -61,5 +61,6 @@ pub fn sort_objs_bfs(objs: &mut Vec<ObjFile>) -> Result<Vec<ObjFile>, LinkerErro
         });
     }
 
-    Ok(result)
+    *objs = result;
+    Ok(())
 }
