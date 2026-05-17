@@ -1,6 +1,6 @@
 use strum_macros::{Display, EnumString};
 
-//FIXME:This will probalby be neede to rework later but for now it works
+//FIXME: This will probalby be neede to rework later but for now it works
 #[derive(EnumString, Display, Debug, Clone, PartialEq, Default)]
 pub enum ComptimeValueType {
     #[strum(serialize = "int")]

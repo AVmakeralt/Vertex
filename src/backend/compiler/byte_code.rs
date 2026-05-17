@@ -28,10 +28,7 @@ use crate::backend::{
     },
     lexer::{
         tokenizer::Lexer,
-        tokens::{
-            Token,
-            TokenKind::{self, TRUE},
-        },
+        tokens::TokenKind::{self, TRUE},
     },
     linker::link::{GlobalSymbols, Symbol, SymbolType::Variable},
 };
@@ -41,7 +38,6 @@ use std::{
     fmt::{self, Debug, Formatter},
     fs, process,
 };
-
 pub trait CompilableClone {
     fn clone_box(&self) -> Box<dyn Compilable>;
 }
@@ -126,6 +122,7 @@ impl Compiler {
         }
     }
     pub fn add_functions(&mut self) -> Result<(), CompileError> {
+        // Seting up functions and place holder
         let mut fn_jmp_addresses: HashMap<String, usize> = HashMap::new();
         self.out.push(Instructions::Jump(0));
         let jump_placeholder = self.out.len();
@@ -135,7 +132,9 @@ impl Compiler {
             .iter()
             .map(|(name, function)| (name.clone(), function.clone()))
             .collect();
+        // Loop for each function
         for (name, mut function) in functions {
+            // Setting up args and lenght
             let length = self.out.len();
             self.context.enter_function_scope();
             for argumet in &function.args {
@@ -150,19 +149,24 @@ impl Compiler {
                 )?;
             }
             self.context.curren_return_type = function.return_type;
+            // Compiling function body
             for instruction in &mut function.body {
                 instruction.compile(self)?;
             }
+            // Droping args after end of the function
             for arg in &function.args {
                 self.out
                     .push(Instructions::Drop(format!("{}_{}", arg.name, name)));
             }
+            // Cleaning up stuff
             self.out.push(Instructions::JumpOnLastOnStack);
             self.context.exit_function_scope();
             self.context.curren_return_type = Void;
             fn_jmp_addresses.insert(name, length);
         }
+        // Setting up proper jumps for all function calls
         self.fix_function_jump_adresses(fn_jmp_addresses);
+        // Jumping behind the functions for normal control flow
         self.out[jump_placeholder - 1] = Instructions::Jump(self.out.len());
         Ok(())
     }
@@ -760,9 +764,11 @@ impl Compilable for BoolNode {
         compiler.out.push(PushBool(self.value == TRUE));
         Ok(Bool)
     }
+
     fn fmt_with_indent(&self, f: &mut Formatter<'_>, indent: usize) -> fmt::Result {
         writeln!(f, "{}String({:?})", indent_fn(indent), self.value)
     }
+
     fn add_to_lookup(&self, compiler: &mut Compiler) -> Result<(), CompileError> {
         Ok(())
     }
@@ -939,7 +945,7 @@ impl Compilable for ImportNode {
             fs::read_to_string(format!("src/{}", &self.module))
                 .unwrap_or_else(|_| panic!("Cannot find module {}", &self.module)),
         );
-        let tokens: &Vec<Token> = match main_lexer.tokenize() {
+        let tokens = match main_lexer.tokenize() {
             Err(e) => {
                 println!("Error at {}:", &self.module);
                 print!("{}", e);

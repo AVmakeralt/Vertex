@@ -16,6 +16,7 @@ pub struct CompileContext {
     types: Vec<String>,
     pub function_depth: usize,
     pub curren_return_type: ComptimeValueType,
+    pub current_function_vars: Vec<ComptimeVariable>,
     is_in_function_contex: bool,
     last_fn_context: usize,
 }
@@ -23,6 +24,7 @@ pub struct CompileContext {
 impl CompileContext {
     pub fn new() -> Self {
         Self {
+            current_function_vars: Vec::new(),
             variables: HashMap::new(),
             functions: HashMap::new(),
             scopes: vec![HashMap::new()],
