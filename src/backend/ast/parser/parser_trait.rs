@@ -1,7 +1,33 @@
+use crate::backend::{
+    ast::{
+        nodes::{
+            BinaryOpNode, BoolNode,
+            CallType::{Fn, Macro},
+            FloatNode, FunctionCallNode, ImportNode, LoopNode, NumberNode, ProgramNode, ReturnNode,
+            StringNode, VariableAccessNode, VariableAssignNode, VariableDefineNode,
+        },
+        statements::{if_statement::IfStatement, while_statement::WhileStatement},
+    },
+    compiler::byte_code::Compilable,
+    errors::parser_errors::ParserError::{self, UnexpectedToken},
+    lexer::tokens::{
+        Token,
+        TokenKind::{
+            self, ASSIGN, CLOSINGBRACE, COLON, COMMA, CONST, DIVIDE, ELSE, EOF, EQUAL, FALSE,
+            FLOAT, FNC, GREATER, IDENTIFIER, IF, LEFTPAREN, LESS, MINUS, MODULO, NUMB,
+            OPENINGBRACE, PLUS, RIGHTPAREN, SEMICOLON, STRING, TIMES, TRUE, USE, VALUE, VAR, WHILE,
+        },
+    },
+};
+
+use crate::backend::ast::functions::{args_node::FunctionArgs, function_nodes::FunctionDefineNode};
+use crate::backend::ast::parser::parser_navigation::ParserNavigation;
+use crate::backend::ast::parser::parse_stmt::ParseStatments;
+
 pub struct Parser {
-    tokens: Vec<Token>,
-    token_idx: usize,
-    on_top_statement: bool,
+    pub tokens: Vec<Token>,
+    pub token_idx: usize,
+    pub on_top_statement: bool,
 }
 
 impl Parser {
