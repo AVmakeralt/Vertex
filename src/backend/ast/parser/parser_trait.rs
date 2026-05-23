@@ -23,6 +23,7 @@ use crate::backend::{
 use crate::backend::ast::functions::{args_node::FunctionArgs, function_nodes::FunctionDefineNode};
 use crate::backend::ast::parser::parser_navigation::ParserNavigation;
 use crate::backend::ast::parser::parse_stmt::ParseStatments;
+use crate::backend::ast::parser::parse_val::ParserDeclarations;
 
 pub struct Parser {
     pub tokens: Vec<Token>,
@@ -51,7 +52,7 @@ impl Parser {
         Ok(Box::new(program))
     }
 
-    fn expect(&mut self, token_kind: TokenKind) -> Result<Token, ParserError> {
+    pub fn expect(&mut self, token_kind: TokenKind) -> Result<Token, ParserError> {
         if self.current_token().token_kind == token_kind {
             let token = self.current_token().clone();
             self.advance();
@@ -62,5 +63,14 @@ impl Parser {
                 found: self.current_token().token_value.clone(),
             })
         }
+    }
+
+    pub fn parse_expr(&mut self) -> Result<Box<dyn Compilable>, ParserError> {
+        //let mut comp:Box<dyn Compilable>;
+        //if self.current_token()==MINUS {
+        //  comp
+        //}
+
+        self.parse_comparison()
     }
 }
