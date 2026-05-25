@@ -1,8 +1,5 @@
-use crate::backend::lexer::tokens::{
-        Token,
-        TokenKind,
-    };
 use crate::backend::ast::parser::Parser;
+use crate::backend::lexer::tokens::{Token, TokenKind};
 
 pub trait ParserNavigation {
     fn current_token(&self) -> &Token;
@@ -24,4 +21,3 @@ impl ParserNavigation for Parser {
         self.tokens[idx].token_kind.clone()
     }
 }
-

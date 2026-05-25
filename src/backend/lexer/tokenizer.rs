@@ -48,7 +48,7 @@ impl Lexer {
         Ok(())
     }
 
-    pub fn tokenize(&mut self) -> Result<&Vec<Token>, LexerError> {
+    pub fn tokenize(mut self) -> Result<Vec<Token>, LexerError> {
         if self.source_text.is_empty() {
             return Err(LexerError {
                 err: LexerErrorKind::EmptyFile,
@@ -168,7 +168,7 @@ impl Lexer {
             token_kind: EOF,
             token_value: "EOF".to_string(),
         });
-        Ok(&self.final_tokens)
+        Ok(self.final_tokens)
     }
 
     fn consume_comment(&mut self) {

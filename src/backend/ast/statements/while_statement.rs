@@ -1,12 +1,14 @@
 use std::fmt::Debug;
 
+use crate::backend::compiler::byte_code::Compiler;
 use crate::backend::{
     compiler::{
-        byte_code::{self, Compilable}, comptime_variable_checker::comptime_value_for_check::ComptimeValueType::{self}, instructions::Instructions
+        byte_code::{self, Compilable},
+        comptime_variable_checker::comptime_value_for_check::ComptimeValueType::{self},
+        instructions::Instructions,
     },
     errors::compiler::compiler_errors::CompileError,
 };
-use crate::backend::compiler::byte_code::Compiler;
 
 #[derive(Clone)]
 pub struct WhileStatement {
@@ -50,7 +52,6 @@ impl Compilable for WhileStatement {
     }
     fn add_to_lookup(&self, compiler: &mut Compiler) -> Result<(), CompileError> {
         Ok(())
-
     }
     fn add_to_type_check(&self, compiler: &mut Compiler) -> Result<(), CompileError> {
         Ok(())

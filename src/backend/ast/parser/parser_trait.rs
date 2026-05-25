@@ -4,15 +4,13 @@ use crate::backend::{
     errors::parser_errors::ParserError::{self, UnexpectedToken},
     lexer::tokens::{
         Token,
-        TokenKind::{
-            self, EOF,
-        },
+        TokenKind::{self, EOF},
     },
 };
 
-use crate::backend::ast::parser::parser_navigation::ParserNavigation;
 use crate::backend::ast::parser::parse_stmt::ParseStatments;
 use crate::backend::ast::parser::parse_val::ParserDeclarations;
+use crate::backend::ast::parser::parser_navigation::ParserNavigation;
 
 pub struct Parser {
     pub tokens: Vec<Token>,

@@ -2,7 +2,7 @@ fnc hi_mom(name:string):int{
   writeLn!(name);
   return 5;
 }
-hi_mom("Hello")
+hi_mom("Hello");
 var x = hi_mom("sdas");
 writeLn!(x);
 

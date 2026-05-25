@@ -32,8 +32,8 @@ impl MacroManager {
         self.macros.insert(name.to_string(), Box::new(mac));
     }
 }
-impl Default for MacroManager{
-    fn default()->Self{
+impl Default for MacroManager {
+    fn default() -> Self {
         Self::new()
     }
 }

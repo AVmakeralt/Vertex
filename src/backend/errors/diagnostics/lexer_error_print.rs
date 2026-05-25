@@ -44,12 +44,7 @@ pub fn print_lexer_err(err: LexerError, src_file: String) {
         }
         pointer.push_str("$red|^$reset|");
 
-        clrprintln!(
-            "{:>width$} | {}",
-            "",
-            pointer,
-            width = line_width
-        );
+        clrprintln!("{:>width$} | {}", "", pointer, width = line_width);
     }
 
     if let Some(next) = lines.get(line_idx + 1) {

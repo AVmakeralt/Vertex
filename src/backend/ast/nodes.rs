@@ -1,10 +1,10 @@
 use crate::backend::compiler::byte_code::Compilable;
+use crate::backend::compiler::comptime_variable_checker::comptime_value_for_check::ComptimeValueType;
 use crate::backend::lexer::tokens::TokenKind;
 use std::fmt;
 use std::fmt::{Debug, Formatter};
-use crate::backend::compiler::comptime_variable_checker::comptime_value_for_check::ComptimeValueType;
 
-#[derive(Clone,PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum CallType {
     Macro,
     Fn,
@@ -203,23 +203,22 @@ impl Debug for ImportNode {
     }
 }
 #[derive(Clone)]
-pub struct ReturnNode{
-    pub returns:Option<Box<dyn Compilable>>
+pub struct ReturnNode {
+    pub returns: Option<Box<dyn Compilable>>,
 }
 
 impl Debug for ReturnNode {
-   fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-       self.fmt_with_indent(f,0)
-   } 
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        self.fmt_with_indent(f, 0)
+    }
 }
 
-
 #[derive(Clone)]
-pub struct LoopNode{
-    pub body:Vec<Box<dyn Compilable>>
+pub struct LoopNode {
+    pub body: Vec<Box<dyn Compilable>>,
 }
 impl Debug for LoopNode {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        self.fmt_with_indent(f,0)
+        self.fmt_with_indent(f, 0)
     }
 }

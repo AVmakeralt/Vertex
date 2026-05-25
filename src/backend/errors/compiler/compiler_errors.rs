@@ -1,11 +1,9 @@
-
 use crate::backend::compiler::comptime_variable_checker::comptime_value_for_check::ComptimeValueType;
 use thiserror::Error;
 
 // let x = Err(CompileError.UndefinedVariable(x));
 #[derive(Debug, Error, Clone)]
 pub enum CompileError {
-
     #[error("[E0001]Unknown macro: {name}")]
     UnknownMacro { name: String },
 
@@ -44,20 +42,26 @@ pub enum CompileError {
     ExpectedPrintable { found: ComptimeValueType },
 
     #[error("[E0012]Function {name} is already defined")]
-    FunctionAlredyExists{name:String},
+    FunctionAlredyExists { name: String },
 
     #[error("[E0013]Unknown function:{name}")]
-    UnknownFunction{name:String},
+    UnknownFunction { name: String },
 
-    #[error("[E0014]Unexpected number of arguments at function {name}: expected {expected} but got {found}")]
-    UnexpectedFunctionArguments{name:String,expected:usize,found:usize},
+    #[error(
+        "[E0014]Unexpected number of arguments at function {name}: expected {expected} but got {found}"
+    )]
+    UnexpectedFunctionArguments {
+        name: String,
+        expected: usize,
+        found: usize,
+    },
 
     #[error("[E0015]Type {name_of_type} alredey exists")]
-    TypeAlredyExists{name_of_type:String},
+    TypeAlredyExists { name_of_type: String },
 
-    #[error("[E0015]Cannot return outside of a function")]
-    CannotReturnOutisdeOfFunction{},
+    #[error("[E0017]Cannot return outside of a function")]
+    CannotReturnOutisdeOfFunction {},
 
     #[error("[E0016]Need to have specifed return type at function {function_name}")]
-    NeedToHaveSpecifiedReturnType{function_name:String}
+    NeedToHaveSpecifiedReturnType { function_name: String },
 }

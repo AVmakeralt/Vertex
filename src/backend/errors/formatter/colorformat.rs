@@ -239,10 +239,10 @@ mod tests {
     #[test]
     fn test_hold_context_default_delim() {
         let s = format_color("$red| hello $green| world").unwrap();
-        let red_seq = "\x1b[38;2;255;0;0m";
-        let green_seq = "\x1b[38;2;0;255;0m";
-        let i_red = s.find(red_seq).expect("red seq present");
-        let i_green = s.find(green_seq).expect("green seq present");
+        let red_seq = builtin("red").unwrap().to_ansi_fg();
+        let green_seq = builtin("green").unwrap().to_ansi_fg();
+        let i_red = s.find(&red_seq).expect("red seq present");
+        let i_green = s.find(&green_seq).expect("green seq present");
         assert!(i_red < i_green, "red must come before green");
         // ensure text between them exists (hello)
         let between = &s[i_red + red_seq.len()..i_green];
@@ -268,9 +268,9 @@ mod tests {
     fn test_reset_builtin_default_delim() {
         // red applied, then reset, then plain world
         let s = format_color("$red|hello$reset|world").unwrap();
-        let red_seq = "\x1b[38;2;255;0;0m";
+        let red_seq = builtin("red").unwrap().to_ansi_fg();
         let reset_seq = "\x1b[0m";
-        let i_red = s.find(red_seq).expect("red seq present");
+        let i_red = s.find(&red_seq).expect("red seq present");
         let i_reset = s.find(reset_seq).expect("reset seq present");
         assert!(i_red < i_reset, "reset should come after red");
         // after reset there should be the plain text 'world' without a following color sequence
@@ -284,8 +284,8 @@ mod tests {
     fn test_custom_delimiter_hash() {
         // use '#' as delimiter: tags like $red#
         let s = format_color_with_delim("$red# hello $green# world", '#').unwrap();
-        assert!(s.contains("\x1b[38;2;255;0;0m"));
-        assert!(s.contains("\x1b[38;2;0;255;0m"));
+        assert!(s.contains(&builtin("red").unwrap().to_ansi_fg()));
+        assert!(s.contains(&builtin("green").unwrap().to_ansi_fg()));
 
         // rgb with custom delimiter
         let s2 = format_color_with_delim("$.0/128/255# test", '#').unwrap();

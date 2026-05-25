@@ -11,5 +11,15 @@ serde = { version = "1.0", features = ["derive"] }
 walkdir = "2"
 strum = "0.28.0"
 strum_macros = "0.28"
+tokio = { version = "1", features = ["full"] }
+indicatif = "0.18.4"
 [lib]
 crate-type = ["staticlib", "rlib"]
+
+[[bin]]
+name = "vertexC"
+path = "src/bin/vertexC.rs"
+
+[[bin]]
+name = "apex"
+path = "src/bin/apex.rs"

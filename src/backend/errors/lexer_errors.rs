@@ -6,14 +6,14 @@ pub enum LexerErrorKind {
     #[error("Cannot have more dots in a number")]
     MoreDotInANumber,
     #[error("Unterminated string:{text}")]
-    UnterminatedString{text:String},
+    UnterminatedString { text: String },
     #[error("Cannot parse empty file")]
     EmptyFile,
 }
-#[derive(Error,Debug)]
+#[derive(Error, Debug)]
 #[error("ln:{line},ch:{char} -> {err}")]
-pub struct LexerError{
-    pub err:LexerErrorKind,
-    pub line:usize,
-    pub char:usize
+pub struct LexerError {
+    pub err: LexerErrorKind,
+    pub line: usize,
+    pub char: usize,
 }

@@ -6,21 +6,20 @@ use crate::backend::compiler::comptime_variable_checker::comptime_value_for_chec
 use crate::backend::errors::compiler::compiler_errors::CompileError;
 
 #[derive(Clone)]
-pub struct StructVariable{
-    pub var_type:String
+pub struct StructVariable {
+    pub var_type: String,
 }
 #[derive(Clone)]
-pub struct StructDefineNode{
-    pub args:Vec<StructVariable>,
-    pub name:String
- 
+pub struct StructDefineNode {
+    pub args: Vec<StructVariable>,
+    pub name: String,
 }
-pub struct ComptimeStructForCheck{
-    variables:Vec<StructVariable>
+pub struct ComptimeStructForCheck {
+    variables: Vec<StructVariable>,
 }
 
-impl Compilable for StructDefineNode{
-    fn compile(&mut self, compiler: &mut Compiler) -> Result<ComptimeValueType,CompileError>{
+impl Compilable for StructDefineNode {
+    fn compile(&mut self, compiler: &mut Compiler) -> Result<ComptimeValueType, CompileError> {
         todo!()
     }
     fn fmt_with_indent(&self, f: &mut std::fmt::Formatter<'_>, indent: usize) -> std::fmt::Result {
@@ -28,7 +27,6 @@ impl Compilable for StructDefineNode{
     }
     fn add_to_lookup(&self, compiler: &mut Compiler) -> Result<(), CompileError> {
         Ok(())
-        
     }
     fn add_to_type_check(&self, compiler: &mut Compiler) -> Result<(), CompileError> {
         compiler.context.add_type(self.name.clone())?;
@@ -39,7 +37,7 @@ impl Compilable for StructDefineNode{
         todo!()
     }
 }
-impl Debug for StructDefineNode{
+impl Debug for StructDefineNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.fmt_with_indent(f, 0)
     }

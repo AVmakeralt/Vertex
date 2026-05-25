@@ -57,12 +57,12 @@ pub fn sort_objs_bfs(objs: &mut Vec<ObjFile>) -> Result<(), LinkerError> {
     if !obj_map.is_empty() {
         let remaining: Vec<_> = obj_map.keys().cloned().collect();
         let imported = remaining[0].clone();
-        let from = remaining.get(1).cloned().unwrap_or_else(|| imported.clone());
-        
-        return Err(LinkerError::CyclicImport {
-            imported,
-            from,
-        });
+        let from = remaining
+            .get(1)
+            .cloned()
+            .unwrap_or_else(|| imported.clone());
+
+        return Err(LinkerError::CyclicImport { imported, from });
     }
 
     *objs = result;

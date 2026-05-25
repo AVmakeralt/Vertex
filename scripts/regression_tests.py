@@ -12,7 +12,10 @@ RESET = "\033[0m"
 BOLD = "\033[1m"
 
 def run_command(command):
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, text=True)
+    # Set VERTEX_RUNTIME_PATH so the compiler can find libvm_runtime.a
+    env = os.environ.copy()
+    env["VERTEX_RUNTIME_PATH"] = os.path.abspath("vm/libvm_runtime.a")
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, text=True, env=env)
     stdout, stderr = process.communicate()
     return process.returncode, stdout, stderr
 

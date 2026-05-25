@@ -15,7 +15,8 @@ use vertex::{
 struct Config {
     name: String,
 }
-fn main() {
+#[tokio::main]
+async fn main() {
     if let Err(err) = run_cli() {
         eprintln!("{}", err);
     }
@@ -31,35 +32,26 @@ fn run_cli() -> Result<(), CommandLineError> {
     if let Some(arg1) = args.get(1) {
         match arg1.as_str() {
             "help" => {
-                println!(
-                    r#"vertex — project manager for the Vertex language
+                vertex::clrprintln!(
+                    r#"
+$blue|apex$reset| — The official package manager and build tool for Vertex
 
-                USAGE:
-                    vertex <COMMAND>
+$green|USAGE:$reset|
+    apex $cyan|<COMMAND>$reset| [FLAGS]
 
-                COMMANDS:
+$green|COMMANDS:$reset|
+    $cyan|new$reset| <NAME>      Create a new Vertex project with a default structure
+    $cyan|build$reset|           Build the project into bytecode (placed in ./out/)
+    $cyan|clear$reset|           Remove all build artifacts inside ./out/
+    $cyan|help$reset|            Display this help message
 
-                    build
-                        Build project into bytecode using configuration
-                        from prj.toml. Output is placed into ./out/
+$green|FLAGS:$reset|
+    $cyan|-d$reset|               Enable debug mode (shows final instructions during build)
 
-                    new <PROJECT_NAME>
-                        Create a new Vertex project:
-
-                            <PROJECT_NAME>/
-                                src/
-                                    main.vtx
-                                prj.toml
-
-                        main.vtx contains a Hello World example.
-
-                    clear
-                        Remove all build artifacts inside ./out/
-
-                DESCRIPTION:
-                    vertex is the official project manager and build tool
-                    for the Vertex programming language.
-                "#
+$green|DESCRIPTION:$reset|
+    apex manages your dependencies, compiles your code, and handles project
+    structure. It is designed to be the primary interface for Vertex developers.
+"#
                 );
             }
             "new" => {

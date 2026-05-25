@@ -12,7 +12,8 @@ use vertex::backend::{
     errors::compiler::error_explain::ERROR_EXPLAIN,
 };
 use vertex::runtime::runner::running_vm::run_code;
-fn main() {
+#[tokio::main]
+async fn main() {
     if let Err(e) = run_cli() {
         eprintln!(
             "{}",
@@ -75,29 +76,26 @@ fn run_cli() -> Result<(), CommandLineError> {
         "help" => {
             vertex::clrprintln!(
                 r#"
-            vertexC — compiler tool for Vertex
+$blue|vertexC$reset| — Low-level compiler tool for Vertex
 
-            vertexC compiles a single source file into Vertex bytecode.
-            It will remain available even after the 'vertex' project
-            manager is finished, mainly for testing and low-level workflows.
+$green|USAGE:$reset|
+    vertexC $cyan|<COMMAND>$reset| [INPUT] [OUTPUT] [FLAGS]
 
-            $green|USAGE:$reset|
-                vertexC build $cyan|<INPUT_FILE> <OUTPUT_FILE>$reset|
-                    Compile source file into bytecode stored in ./out/
-                    flags:
-                        -d:show final instructions
+$green|COMMANDS:$reset|
+    $cyan|build$reset| <IN> <OUT>   Compile source file into bytecode
+    $cyan|run$reset|   <BYTECODE>   Execute bytecode using the virtual machine
+    $cyan|exec$reset|  <IN> <OUT>   Compile and immediately run the produced bytecode
+    $cyan|error$reset| <CODE>       Detailed explanation of a specific error code
+    $cyan|help$reset|               Display this help message
 
-                vertexC run $cyan|<BYTECODE>$reset|
-                    Execute bytecode using VVM (Vertex Virtual Machine)
+$green|FLAGS:$reset|
+    $cyan|-d$reset|                  Show final instructions (debug)
 
-                vertexC exec $cyan|<INPUT_FILE> <OUTPUT_FILE>$reset|
-                    Compile and immediately run the produced bytecode
-                    flags:
-                        -d:show final instructions
-
-                vertexC error $cyan|<ERORR_CODE>$reset|
-                    Explains erorr more deeply
-            "#
+$green|DESCRIPTION:$reset|
+    vertexC compiles a single source file into Vertex bytecode. 
+    It is intended for testing, debugging, and low-level workflows. 
+    For project management, use the 'apex' tool.
+"#
             );
             Ok(())
         }

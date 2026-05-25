@@ -953,7 +953,7 @@ impl Compilable for ImportNode {
         /*
          * Lexer
          */
-        let mut main_lexer: Lexer = Lexer::new(
+        let main_lexer: Lexer = Lexer::new(
             fs::read_to_string(format!("src/{}", &self.module))
                 .unwrap_or_else(|_| panic!("Cannot find module {}", &self.module)),
         );
@@ -968,7 +968,7 @@ impl Compilable for ImportNode {
         /*
          * Parser
          */
-        let mut main_parser: Parser = Parser::new(tokens.to_vec());
+        let mut main_parser: Parser = Parser::new(tokens);
         let parsed_ast = main_parser.parse().unwrap_or_else(|e| {
             println!("Error at {}:", &self.module);
             println!("\x1b[1;31m{}\x1b[0m", e);

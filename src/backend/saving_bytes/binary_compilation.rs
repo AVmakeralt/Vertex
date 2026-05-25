@@ -1,15 +1,28 @@
 use std::fs;
 use std::path::Path;
-use std::process::Command;
-use std::time::Instant;
+use std::process::{self, Command};
+use std::time::{Duration, Instant};
 
-use crate::clrprintln;
+use indicatif::{ProgressBar, ProgressStyle};
+
+fn create_spinner(msg: String) -> ProgressBar {
+    let pb = ProgressBar::new_spinner();
+    pb.enable_steady_tick(Duration::from_millis(80));
+    pb.set_style(
+        ProgressStyle::with_template("{spinner:.green} {msg}")
+            .unwrap()
+            .tick_strings(&["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]),
+    );
+    pb.set_message(msg);
+    pb
+}
+
 /// You need to have zig toolchain installed to compile this. We are creating
 /// temp_launcher and than compiling it with:
 /// `zig build-exe tmp_launcher_path.zig runtime_path -lc -lunwind
 /// -Doptimize=ReleaseSmall femit-bin=out/bin/out`
 pub fn compile_to_binary(out: &str) {
-    println!("\x1b[1mCompiling with zig\x1b[0m");
+    let pb = create_spinner("Compiling with zig".to_string());
     let compiler_timer = Instant::now();
     let bytecode_path = format!("out/{}", out);
     let temp_launcher = format!(
@@ -27,7 +40,7 @@ pub fn main() !void {{
     fs::write(tmp_launcher_path, temp_launcher).unwrap();
     let runtime_path = find_libvm_runtime(Path::new("."))
         .expect("Build error: Cannot find static libvm_runtime.a library. Ensure it is in the same directory as vertexC or set VERTEX_RUNTIME_PATH.");
-    let status = Command::new("zig")
+    let output = Command::new("zig")
         .args([
             "build-exe",
             "tmp_launcher.zig",
@@ -37,17 +50,23 @@ pub fn main() !void {{
             "-Doptimize=ReleaseSmall",
             &format!("-femit-bin=out/bin/{}", out),
         ])
-        .status()
+        .output()
         .expect("Failed to run zig");
-    if !status.success() {
-        panic!("zig failed");
+
+    if !output.status.success() {
+        pb.finish_and_clear();
+        eprintln!("\x1b[1;31mZig compilation failed:\x1b[0m");
+        eprintln!("{}", String::from_utf8_lossy(&output.stderr));
+        process::exit(-1);
     }
     fs::remove_file(tmp_launcher_path).unwrap();
-    clrprintln!("$green|");
-    clrprintln!(&format!(
-        "$green|Finished compiling with zig$reset| in {:.4}",
+
+    pb.finish_and_clear();
+    println!(
+        "\x1b[32m✔\x1b[0m {:<50} in {:.4}s",
+        "Finished compiling with zig",
         compiler_timer.elapsed().as_secs_f32()
-    ));
+    );
 }
 
 fn find_libvm_runtime(_start: &Path) -> Option<String> {

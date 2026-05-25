@@ -1,16 +1,14 @@
 use crate::backend::{
     ast::{
-        nodes::{
-            ImportNode, LoopNode, ReturnNode, VariableAssignNode, VariableDefineNode,
-        },
+        nodes::{ImportNode, LoopNode, ReturnNode, VariableAssignNode, VariableDefineNode},
         statements::{if_statement::IfStatement, while_statement::WhileStatement},
     },
     compiler::byte_code::Compilable,
     errors::parser_errors::ParserError::{self, UnexpectedToken},
     lexer::tokens::TokenKind::{
-            self, ASSIGN, CLOSINGBRACE, COLON, COMMA, CONST, ELSE, EOF, FNC, IDENTIFIER, IF, LEFTPAREN,
-            OPENINGBRACE, RIGHTPAREN, SEMICOLON, STRING, USE, VAR, WHILE,
-        },
+        self, ASSIGN, CLOSINGBRACE, COLON, COMMA, CONST, ELSE, EOF, FNC, IDENTIFIER, IF, LEFTPAREN,
+        OPENINGBRACE, RIGHTPAREN, SEMICOLON, STRING, USE, VAR, WHILE,
+    },
 };
 
 use crate::backend::ast::functions::{args_node::FunctionArgs, function_nodes::FunctionDefineNode};
@@ -52,7 +50,7 @@ impl ParseStatments for Parser {
                     if self.current_token().token_kind == EOF {
                         return Err(ParserError::UnexpectedToken {
                             found: "EOF".into(),
-                                expected: SEMICOLON,
+                            expected: SEMICOLON,
                         });
                     }
                     body.push(self.parse_stmt()?);
@@ -77,61 +75,61 @@ impl ParseStatments for Parser {
                 self.advance();
                 if self.current_token().token_kind == CONST
                     || self.current_token().token_kind == VAR
-                    {
-                        let value = self.parse_var_decl_stmt(true)?;
-                        self.expect(SEMICOLON)?;
-                        Ok(value)
-                    } else if self.current_token().token_kind == FNC {
-                        let mut args = Vec::new();
-                        self.advance(); //FN
-                        let id = self.expect(IDENTIFIER)?;
-                        self.expect(LEFTPAREN)?;
-                        if self.current_token().token_kind != RIGHTPAREN {
-                            loop {
-                                let arg_name = self.expect(IDENTIFIER)?;
-                                self.expect(COLON)?;
-                                let arg_type = self.expect(IDENTIFIER)?;
+                {
+                    let value = self.parse_var_decl_stmt(true)?;
+                    self.expect(SEMICOLON)?;
+                    Ok(value)
+                } else if self.current_token().token_kind == FNC {
+                    let mut args = Vec::new();
+                    self.advance(); //FN
+                    let id = self.expect(IDENTIFIER)?;
+                    self.expect(LEFTPAREN)?;
+                    if self.current_token().token_kind != RIGHTPAREN {
+                        loop {
+                            let arg_name = self.expect(IDENTIFIER)?;
+                            self.expect(COLON)?;
+                            let arg_type = self.expect(IDENTIFIER)?;
 
-                                args.push(FunctionArgs {
-                                    name: arg_name.token_value,
-                                    argument_type: arg_type.token_value,
-                                });
+                            args.push(FunctionArgs {
+                                name: arg_name.token_value,
+                                argument_type: arg_type.token_value,
+                            });
 
-                                if self.current_token().token_kind == COMMA {
-                                    self.advance();
-                                    continue;
-                                }
-
-                                break;
+                            if self.current_token().token_kind == COMMA {
+                                self.advance();
+                                continue;
                             }
-                        }
-                        self.expect(RIGHTPAREN)?;
-                        let return_type = if self.current_token().token_kind == COLON {
-                            self.advance();
-                            Some(self.expect(IDENTIFIER)?.token_value)
-                        } else {
-                            None
-                        };
-                        self.expect(OPENINGBRACE)?;
 
-                        let mut body: Vec<Box<dyn Compilable>> = Vec::new();
-                        while self.current_token().token_kind != CLOSINGBRACE {
-                            body.push(self.parse_stmt()?);
+                            break;
                         }
-                        self.expect(CLOSINGBRACE)?;
-
-                        Ok(Box::new(FunctionDefineNode {
-                            id: id.token_value,
-                            return_type,
-                            body,
-                            args,
-                        }))
-                    } else {
-                        Err(UnexpectedToken {
-                            expected: VAR,
-                            found: self.current_token().token_value.clone(),
-                        })
                     }
+                    self.expect(RIGHTPAREN)?;
+                    let return_type = if self.current_token().token_kind == COLON {
+                        self.advance();
+                        Some(self.expect(IDENTIFIER)?.token_value)
+                    } else {
+                        None
+                    };
+                    self.expect(OPENINGBRACE)?;
+
+                    let mut body: Vec<Box<dyn Compilable>> = Vec::new();
+                    while self.current_token().token_kind != CLOSINGBRACE {
+                        body.push(self.parse_stmt()?);
+                    }
+                    self.expect(CLOSINGBRACE)?;
+
+                    Ok(Box::new(FunctionDefineNode {
+                        id: id.token_value,
+                        return_type,
+                        body,
+                        args,
+                    }))
+                } else {
+                    Err(UnexpectedToken {
+                        expected: VAR,
+                        found: self.current_token().token_value.clone(),
+                    })
+                }
             }
             VAR | CONST => {
                 let value = self.parse_var_decl_stmt(false);
@@ -157,7 +155,7 @@ impl ParseStatments for Parser {
                     if self.current_token().token_kind == EOF {
                         return Err(ParserError::UnexpectedToken {
                             found: "EOF".into(),
-                                expected: SEMICOLON,
+                            expected: SEMICOLON,
                         });
                     }
                     body.push(self.parse_stmt()?);
@@ -171,7 +169,7 @@ impl ParseStatments for Parser {
                         if self.current_token().token_kind == EOF {
                             return Err(ParserError::UnexpectedToken {
                                 found: "EOF".into(),
-                                    expected: SEMICOLON,
+                                expected: SEMICOLON,
                             });
                         }
                         else_body.push(self.parse_stmt()?);
@@ -200,7 +198,7 @@ impl ParseStatments for Parser {
                     if self.current_token().token_kind == EOF {
                         return Err(ParserError::UnexpectedToken {
                             found: "EOF".into(),
-                                expected: SEMICOLON,
+                            expected: SEMICOLON,
                         });
                     }
                     body.push(self.parse_stmt()?);

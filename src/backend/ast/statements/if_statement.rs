@@ -1,5 +1,9 @@
 use crate::backend::{
-    compiler::{ byte_code::{Compilable, Compiler, indent_fn}, comptime_variable_checker::comptime_value_for_check::ComptimeValueType, instructions::Instructions},
+    compiler::{
+        byte_code::{Compilable, Compiler, indent_fn},
+        comptime_variable_checker::comptime_value_for_check::ComptimeValueType,
+        instructions::Instructions,
+    },
     errors::compiler::compiler_errors::CompileError,
 };
 use std::fmt::Debug;

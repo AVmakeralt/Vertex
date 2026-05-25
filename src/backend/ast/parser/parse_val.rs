@@ -2,9 +2,7 @@ use crate::backend::{
     ast::nodes::BinaryOpNode,
     compiler::byte_code::Compilable,
     errors::parser_errors::ParserError::{self},
-    lexer::tokens::TokenKind::{
-            DIVIDE, EQUAL, GREATER, LESS, MINUS, MODULO, PLUS, TIMES,
-        },
+    lexer::tokens::TokenKind::{DIVIDE, EQUAL, GREATER, LESS, MINUS, MODULO, PLUS, TIMES},
 };
 
 use crate::backend::ast::parser::Parser;
@@ -22,16 +20,16 @@ impl ParserDeclarations for Parser {
         while self.current_token().token_kind == GREATER
             || self.current_token().token_kind == LESS
             || self.current_token().token_kind == EQUAL
-            {
-                let operator = self.current_token().token_kind.clone();
-                self.advance();
-                factor = Box::new(BinaryOpNode {
-                    left: factor,
-                    right: self.parse_term()?,
-                                    op_tok: operator,
-                });
-            }
-            Ok(factor)
+        {
+            let operator = self.current_token().token_kind.clone();
+            self.advance();
+            factor = Box::new(BinaryOpNode {
+                left: factor,
+                right: self.parse_term()?,
+                op_tok: operator,
+            });
+        }
+        Ok(factor)
     }
     fn parse_term(&mut self) -> Result<Box<dyn Compilable>, ParserError> {
         let mut factor = self.parse_factor()?;
@@ -41,7 +39,7 @@ impl ParserDeclarations for Parser {
             factor = Box::new(BinaryOpNode {
                 left: factor,
                 right: self.parse_factor()?,
-                                op_tok: operator,
+                op_tok: operator,
             });
         }
         Ok(factor)
@@ -52,15 +50,15 @@ impl ParserDeclarations for Parser {
         while self.current_token().token_kind == TIMES
             || self.current_token().token_kind == DIVIDE
             || self.current_token().token_kind == MODULO
-            {
-                let operator = self.current_token().token_kind.clone();
-                self.advance();
-                factor = Box::new(BinaryOpNode {
-                    left: factor,
-                    right: self.parse_unary()?,
-                                    op_tok: operator,
-                });
-            }
-            Ok(factor)
+        {
+            let operator = self.current_token().token_kind.clone();
+            self.advance();
+            factor = Box::new(BinaryOpNode {
+                left: factor,
+                right: self.parse_unary()?,
+                op_tok: operator,
+            });
+        }
+        Ok(factor)
     }
 }
