@@ -26,17 +26,14 @@ use crate::backend::{
     errors::compiler::compiler_errors::CompileError::{
         self, CannotInferType, TypeMismatch, UndefinedVariable,
     },
-    lexer::{
-        tokenizer::Lexer,
-        tokens::TokenKind::{self, TRUE},
-    },
+    lexer::tokens::TokenKind::{self, TRUE},
     linker::link::{GlobalSymbols, Symbol, SymbolType::Variable},
 };
 use CompileError::ConstantWithoutValue;
 use std::{
     collections::HashMap,
     fmt::{self, Debug, Formatter},
-    fs, process,
+    process,
 };
 pub trait CompilableClone {
     fn clone_box(&self) -> Box<dyn Compilable>;
@@ -953,18 +950,13 @@ impl Compilable for ImportNode {
         /*
          * Lexer
          */
-        let main_lexer: Lexer = Lexer::new(
-            fs::read_to_string(format!("src/{}", &self.module))
-                .unwrap_or_else(|_| panic!("Cannot find module {}", &self.module)),
-        );
-        let tokens = match main_lexer.tokenize() {
-            Err(e) => {
-                println!("Error at {}:", &self.module);
-                print!("{}", e);
-                process::exit(-1);
-            }
-            Ok(tokens) => tokens,
-        };
+        let tokens = compiler
+            .context
+            .lexed_files
+            .get(&self.module)
+            .expect("Cannot find module {self.module}")
+            .to_vec();
+
         /*
          * Parser
          */

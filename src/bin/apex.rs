@@ -15,8 +15,8 @@ use vertex::{
 struct Config {
     name: String,
 }
-#[tokio::main]
-async fn main() {
+
+fn main() {
     if let Err(err) = run_cli() {
         eprintln!("{}", err);
     }
@@ -90,7 +90,7 @@ $green|DESCRIPTION:$reset|
                     Ok(c) => c,
                 };
 
-                File::open("src/main.vtx").unwrap_or_else(|e| {
+                File::open("src/main.vtx").unwrap_or_else(|_e| {
                     clrprintln!("$red|Linker error -> Cannot find main.vtx in ./src");
                     process::exit(-1);
                 });
