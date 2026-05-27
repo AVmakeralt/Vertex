@@ -1,0 +1,5 @@
+const baz = 5;
+var foo:type = bar();
+if foo > baz {
+  writeLn!("xyz");
+}

@@ -26,11 +26,11 @@ impl Compilable for StructDefineNode {
         todo!()
     }
     fn add_to_lookup(&self, compiler: &mut Compiler) -> Result<(), CompileError> {
+        compiler.context.add_type(self.name.clone())?;
         Ok(())
     }
     fn add_to_type_check(&self, compiler: &mut Compiler) -> Result<(), CompileError> {
-        compiler.context.add_type(self.name.clone())?;
-        todo!()
+        Ok(())
     }
 
     fn my_type(&self, compiler: &mut Compiler) -> Result<ComptimeValueType, CompileError> {

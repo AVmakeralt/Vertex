@@ -119,7 +119,7 @@ pub fn compile_file_to_bytecode(
 
 //NOTE:This is just entry point for the compilation process, and it
 //shouldn't be used any further in the compilation process
-pub fn build_directory(dir: String, out: String, debug: bool, _vm_path: Option<PathBuf>) {
+pub fn build_prj(dir: String, out: String, debug: bool, _vm_path: Option<PathBuf>) {
     ensure_target_dir();
     let total_start = Instant::now();
 
@@ -153,7 +153,16 @@ pub fn build_directory(dir: String, out: String, debug: bool, _vm_path: Option<P
                 }
                 Ok(tokens) => tokens,
             };
-            (file.clone(), tokens)
+            // Normalize key: if file is "src/math.vtx" and dir is "src/", key becomes "math.vtx"
+            let key = if file.starts_with(&dir) {
+                file.strip_prefix(&dir)
+                    .unwrap()
+                    .trim_start_matches('/')
+                    .to_string()
+            } else {
+                file.clone()
+            };
+            (key, tokens)
         })
         .collect();
 
@@ -163,7 +172,18 @@ pub fn build_directory(dir: String, out: String, debug: bool, _vm_path: Option<P
     let mut objs: Vec<ObjFile> = Vec::new();
 
     for file in vtx_files {
-        let tokens = tokens_map.get(&file).unwrap().clone();
+        let key = if file.starts_with(&dir) {
+            file.strip_prefix(&dir)
+                .unwrap()
+                .trim_start_matches('/')
+                .to_string()
+        } else {
+            file.clone()
+        };
+        let tokens = tokens_map
+            .get(&key)
+            .unwrap_or_else(|| panic!("Token map missing key: {}", key))
+            .clone();
         objs.push(compile_file_to_bytecode(file, tokens, &tokens_map));
     }
 

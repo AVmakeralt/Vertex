@@ -1,19 +1,22 @@
 //!Main vertex package manager and linker
 use serde::Deserialize;
 use std::{
+    collections::HashMap,
     env::{self},
     fs::{self, File, remove_dir_all},
     io::Write,
     process,
 };
 use vertex::{
-    backend::{errors::cli_errors::CommandLineError, saving_bytes::compile_tools::build_directory},
+    backend::{errors::cli_errors::CommandLineError, saving_bytes::compile_tools::build_prj},
     clrprintln,
 };
 
 #[derive(Deserialize)]
 struct Config {
     name: String,
+    #[serde(default)]
+    dependencies: HashMap<String, String>,
 }
 
 fn main() {
@@ -94,7 +97,7 @@ $green|DESCRIPTION:$reset|
                     clrprintln!("$red|Linker error -> Cannot find main.vtx in ./src");
                     process::exit(-1);
                 });
-                build_directory("src/".to_string(), config.name, debug, None)
+                build_prj("src/".to_string(), config.name, debug, None)
             }
             "clear" => remove_dir_all("./out").unwrap(),
             _ => return Err(CommandLineError::NoSuchCommand),
