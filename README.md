@@ -72,7 +72,7 @@ Contributions are welcome! Please feel free to submit issues and pull requests.
 
 ## License
 
-Vertex is licensed under the [MIT License](license.md).
+Vertex is licensed under the [Apache License 2.0](LICENSE.md).
 
 ---
 
