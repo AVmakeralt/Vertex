@@ -954,7 +954,7 @@ impl Compilable for ImportNode {
             .context
             .lexed_files
             .get(&self.module)
-            .expect("Cannot find module {self.module}")
+            .unwrap_or_else(|| panic!("Cannot find module {}", self.module))
             .to_vec();
 
         /*

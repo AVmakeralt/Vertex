@@ -78,13 +78,14 @@ pub fn compile_file_to_bytecode(
      * Lookup
      */
     let mut compiler = Compiler::new();
+    compiler.context.lexed_files = lexed_files.clone();
+
     if let Err(e) = parsed_ast.add_to_lookup(&mut compiler) {
         pb.finish_and_clear();
         clrprintln!("$red|Error at:{}", &dir);
         clrprintln!("$red|{}", e);
         process::exit(-3);
     }
-    compiler.context.lexed_files = lexed_files.clone();
 
     /*
      * Type check
@@ -137,8 +138,8 @@ pub fn build_directory(dir: String, out: String, debug: bool, _vm_path: Option<P
      */
     let vtx_files = get_vertex_files_recursive(&dir);
 
-    let mut tokens_map: HashMap<String, Vec<Token>> = vtx_files
-        .par_iter()
+    let tokens_map: HashMap<String, Vec<Token>> = vtx_files
+        .par_iter() //NOTE:We chose Rayon instead of Tokio because its much simplier
         .map(|file| {
             let content =
                 fs::read_to_string(file).unwrap_or_else(|_| panic!("Cannot find module {}", file));
@@ -162,7 +163,7 @@ pub fn build_directory(dir: String, out: String, debug: bool, _vm_path: Option<P
     let mut objs: Vec<ObjFile> = Vec::new();
 
     for file in vtx_files {
-        let tokens = tokens_map.remove(&file).unwrap();
+        let tokens = tokens_map.get(&file).unwrap().clone();
         objs.push(compile_file_to_bytecode(file, tokens, &tokens_map));
     }
 

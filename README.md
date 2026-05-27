@@ -60,9 +60,9 @@ vertex/
 
 ## Current Status
 
-- **Version**: 0.1.32-alpha
+- **Version**: 0.1.52-alpha
 - **Status**: Early development
-- **License**: [MIT](license.md)
+- **License**: [Apache-2.0](LICENSE.md)
 
 This is an active project in early alpha stages. Features and syntax may change.
 
