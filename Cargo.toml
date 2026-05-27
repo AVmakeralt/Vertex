@@ -12,6 +12,7 @@ serde = { version = "1.0", features = ["derive"] }
 walkdir = "2"
 strum = "0.28.0"
 strum_macros = "0.28"
+rayon = "1.10"
 indicatif = "0.18.4"
 
 [profile.release]

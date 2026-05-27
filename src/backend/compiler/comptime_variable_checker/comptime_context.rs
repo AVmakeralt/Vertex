@@ -5,6 +5,7 @@ use crate::backend::compiler::comptime_variable_checker::comptime_value_for_chec
     Bool, Int, StringValue, Void, Float
 };
 use crate::backend::errors::compiler::compiler_errors::CompileError::UndefinedType;
+use crate::backend::lexer::tokens::Token;
 use std::collections::HashMap;
 use crate::backend::ast::statements::structs::ComptimeStructForCheck;
 use crate::tools::custom_truncate::truncate_and_return;
@@ -16,6 +17,7 @@ pub struct CompileContext {
     pub function_depth: usize,
     pub current_return_type: ComptimeValueType,
     pub current_function_vars: Vec<ComptimeVariable>,
+    pub lexed_files: HashMap<String, Vec<Token>>,
     is_in_function_contex: bool,
     last_fn_context: usize,
     types: Vec<String>,
@@ -34,6 +36,7 @@ impl CompileContext {
             is_in_function_contex: false,
             last_fn_context: 0,
             function_depth: 0,
+            lexed_files: HashMap::new(),
         }
     }
     pub fn is_in_function_contex(&self) -> bool {

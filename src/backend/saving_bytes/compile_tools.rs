@@ -13,6 +13,8 @@ use crate::backend::{
 };
 use crate::clrprintln;
 use indicatif::{ProgressBar, ProgressStyle};
+use rayon::prelude::*;
+use std::collections::HashMap;
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -53,30 +55,19 @@ fn debug_print(tokens: &Vec<Token>, ast: Box<dyn Compilable>, instructions: &Vec
 /// let final_obj = compile_file_to_bytecode(path);
 /// //now you can do anything with the ObjFile
 /// ```
-pub fn compile_file_to_bytecode(dir: String) -> ObjFile {
+pub fn compile_file_to_bytecode(
+    dir: String,
+    tokens: Vec<Token>,
+    lexed_files: &HashMap<String, Vec<Token>>,
+) -> ObjFile {
     let file_start = Instant::now();
     let pb = create_spinner(format!("Compiling {}", dir));
 
     /*
-     * Lexer
-     */
-    let main_lexer: Lexer = Lexer::new(
-        fs::read_to_string(&dir).unwrap_or_else(|_| panic!("Cannot find module {}", &dir)),
-    );
-
-    let tokens: Vec<Token> = match main_lexer.tokenize() {
-        Err(e) => {
-            pb.finish_and_clear();
-            clrprintln!("$red|Error at {}:", &dir);
-            print_lexer_err(e, fs::read_to_string(&dir).unwrap());
-            process::exit(-1);
-        }
-        Ok(tokens) => tokens,
-    };
-    /*
      * Parser
      */
     let mut main_parser: Parser = Parser::new(tokens);
+
     let mut parsed_ast = main_parser.parse().unwrap_or_else(|e| {
         pb.finish_and_clear();
         println!("Error at {}:", &dir);
@@ -93,6 +84,7 @@ pub fn compile_file_to_bytecode(dir: String) -> ObjFile {
         clrprintln!("$red|{}", e);
         process::exit(-3);
     }
+    compiler.context.lexed_files = lexed_files.clone();
 
     /*
      * Type check
@@ -126,9 +118,8 @@ pub fn compile_file_to_bytecode(dir: String) -> ObjFile {
 
 //NOTE:This is just entry point for the compilation process, and it
 //shouldn't be used any further in the compilation process
-pub fn build_directory(dir: String, out: String, debug: bool, vm_path: Option<PathBuf>) {
+pub fn build_directory(dir: String, out: String, debug: bool, _vm_path: Option<PathBuf>) {
     ensure_target_dir();
-
     let total_start = Instant::now();
 
     let src_path = Path::new(&dir)
@@ -142,12 +133,37 @@ pub fn build_directory(dir: String, out: String, debug: bool, vm_path: Option<Pa
     );
 
     /*
+     * Lexing phase
+     */
+    let vtx_files = get_vertex_files_recursive(&dir);
+
+    let mut tokens_map: HashMap<String, Vec<Token>> = vtx_files
+        .par_iter()
+        .map(|file| {
+            let content =
+                fs::read_to_string(file).unwrap_or_else(|_| panic!("Cannot find module {}", file));
+            let main_lexer: Lexer = Lexer::new(content);
+
+            let tokens: Vec<Token> = match main_lexer.tokenize() {
+                Err(e) => {
+                    clrprintln!("$red|Error at {}:", file);
+                    print_lexer_err(e, fs::read_to_string(file).unwrap());
+                    process::exit(-1);
+                }
+                Ok(tokens) => tokens,
+            };
+            (file.clone(), tokens)
+        })
+        .collect();
+
+    /*
      * Compile phase
      */
     let mut objs: Vec<ObjFile> = Vec::new();
 
-    for file in get_vertex_files_recursive(&dir) {
-        objs.push(compile_file_to_bytecode(file));
+    for file in vtx_files {
+        let tokens = tokens_map.remove(&file).unwrap();
+        objs.push(compile_file_to_bytecode(file, tokens, &tokens_map));
     }
 
     /*

@@ -12,8 +12,8 @@ use vertex::backend::{
     errors::compiler::error_explain::ERROR_EXPLAIN,
 };
 use vertex::runtime::runner::running_vm::run_code;
-#[tokio::main]
-async fn main() {
+
+fn main() {
     if let Err(e) = run_cli() {
         eprintln!(
             "{}",
