@@ -915,7 +915,10 @@ impl Compilable for ReturnNode {
                     });
                 }
             } else if compiler.context.current_return_type != Void {
-                panic!("stupid idiot")
+                return Err(TypeMismatch {
+                    expected: compiler.context.current_return_type.clone(),
+                    found: Void,
+                });
             }
 
             let var_to_drop = compiler.context.get_vars_to_drop();

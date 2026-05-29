@@ -8,7 +8,10 @@ use std::{
     process,
 };
 use vertex::{
-    backend::{errors::cli_errors::CommandLineError, saving_bytes::compile_tools::build_prj},
+    backend::{
+        errors::cli_errors::CommandLineError,
+        saving_bytes::compile_tools::{build_prj, set_config},
+    },
     clrprintln,
 };
 
@@ -18,7 +21,6 @@ struct Config {
     #[serde(default)]
     dependencies: HashMap<String, String>,
 }
-
 fn main() {
     if let Err(err) = run_cli() {
         eprintln!("{}", err);
@@ -92,6 +94,7 @@ $green|DESCRIPTION:$reset|
                     }
                     Ok(c) => c,
                 };
+                set_config(config.dependencies);
 
                 File::open("src/main.vtx").unwrap_or_else(|_e| {
                     clrprintln!("$red|Linker error -> Cannot find main.vtx in ./src");

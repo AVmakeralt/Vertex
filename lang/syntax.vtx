@@ -1,5 +1,14 @@
-const baz = 5;
-var foo:type = bar();
+# This is just playground where iam experimenting with differnt syntax and design styles for Vertex
+
+exp fnc bar(x:int,y:float):int{
+  return x + y; # this will work
+}
+exp const baz = 5;
+var foo: type = bar();
 if foo > baz {
   writeLn!("xyz");
 }
+else{
+  processExit!(-5);
+}
+

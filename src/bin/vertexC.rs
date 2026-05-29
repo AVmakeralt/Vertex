@@ -1,6 +1,6 @@
-// NOTE:This is the main Vertex compiler CLI used until `vertex` is ready for production.
+// NOTE:This is the main Vertex compiler CLI used until `apex` is ready for production.
 // It is intended to compile a single file without external dependencies.
-// Currently, it does not have a working linker. Once `vertex` is ready, this tool will likely be replaced or deprecated and not be ready for
+// Currently, it does not have a working linker. Once `apex` is ready, this tool will likely be replaced or deprecated and not be ready for
 // production.
 use std::env;
 use std::path::PathBuf;
@@ -55,6 +55,8 @@ fn run_cli() -> Result<(), CommandLineError> {
                 debug,
                 Some(PathBuf::from(path_to_vm)),
             );
+
+            println!("\n\x1b[1;32mRunning final bytecode\x1b[0m",);
             run_code(&format!("out/{}", &output));
             Ok(())
         }

@@ -23,6 +23,19 @@ use std::{
 };
 use walkdir::WalkDir;
 
+pub static DEPENDECIES_REFS: std::sync::OnceLock<HashMap<String, String>> =
+    std::sync::OnceLock::new();
+
+pub fn set_config(map: HashMap<String, String>) {
+    DEPENDECIES_REFS.set(map).expect("Config already set");
+}
+
+pub fn get_modules() -> &'static HashMap<String, String> {
+    DEPENDECIES_REFS.get().expect("Config not initialized")
+}
+fn is_config_set() -> bool {
+    DEPENDECIES_REFS.get().is_some()
+}
 fn create_spinner(msg: String) -> ProgressBar {
     let pb = ProgressBar::new_spinner();
     pb.enable_steady_tick(Duration::from_millis(80));
@@ -112,7 +125,7 @@ pub fn compile_file_to_bytecode(
 
     ObjFile {
         instructions: compiler.out,
-        name: dir.clone().replace("src/", ""),
+        name: dir.clone(),
         imports: compiler.imports.clone(),
     }
 }
@@ -136,11 +149,27 @@ pub fn build_prj(dir: String, out: String, debug: bool, _vm_path: Option<PathBuf
     /*
      * Lexing phase
      */
-    let vtx_files = get_vertex_files_recursive(&dir);
+    let main_vtx_files = get_vertex_files_recursive(&dir);
+    let mut files_to_lex = Vec::new();
 
-    let tokens_map: HashMap<String, Vec<Token>> = vtx_files
-        .par_iter() //NOTE:We chose Rayon instead of Tokio because its much simplier
-        .map(|file| {
+    // Add main project files
+    for file in &main_vtx_files {
+        files_to_lex.push((file.clone(), dir.clone(), None));
+    }
+
+    // Add dependency files
+    if is_config_set() {
+        for (name, path) in get_modules() {
+            let dep_src = format!("{}/src", path);
+            for file in get_vertex_files_recursive(&dep_src) {
+                files_to_lex.push((file, dep_src.clone(), Some(name.clone())));
+            }
+        }
+    }
+
+    let tokens_map: HashMap<String, Vec<Token>> = files_to_lex
+        .par_iter()
+        .map(|(file, base_dir, prefix)| {
             let content =
                 fs::read_to_string(file).unwrap_or_else(|_| panic!("Cannot find module {}", file));
             let main_lexer: Lexer = Lexer::new(content);
@@ -153,15 +182,22 @@ pub fn build_prj(dir: String, out: String, debug: bool, _vm_path: Option<PathBuf
                 }
                 Ok(tokens) => tokens,
             };
-            // Normalize key: if file is "src/math.vtx" and dir is "src/", key becomes "math.vtx"
-            let key = if file.starts_with(&dir) {
-                file.strip_prefix(&dir)
+
+            // Normalize key
+            let rel_path = if file.starts_with(base_dir) {
+                file.strip_prefix(base_dir)
                     .unwrap()
                     .trim_start_matches('/')
                     .to_string()
             } else {
                 file.clone()
             };
+
+            let key = match prefix {
+                Some(p) => format!("{}/{}", p, rel_path),
+                None => rel_path,
+            };
+
             (key, tokens)
         })
         .collect();
@@ -171,7 +207,7 @@ pub fn build_prj(dir: String, out: String, debug: bool, _vm_path: Option<PathBuf
      */
     let mut objs: Vec<ObjFile> = Vec::new();
 
-    for file in vtx_files {
+    for file in main_vtx_files {
         let key = if file.starts_with(&dir) {
             file.strip_prefix(&dir)
                 .unwrap()
