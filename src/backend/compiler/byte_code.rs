@@ -74,7 +74,6 @@ pub struct Compiler {
     pub current_fn: String,
     pub lookup: GlobalSymbols,
     pub function_types: HashMap<String, ComptimeValueType>,
-    pub variables_type: HashMap<String, ComptimeValueType>,
     pub imports: Vec<String>,
     pub function_call_addresses: HashMap<String, Vec<usize>>,
 }
@@ -94,7 +93,6 @@ impl Compiler {
             lookup: GlobalSymbols {
                 symbols: HashMap::new(),
             },
-            variables_type: HashMap::new(),
             function_types: HashMap::new(),
             imports: vec![],
             function_call_addresses: HashMap::new(),
@@ -592,9 +590,6 @@ impl Compilable for VariableDefineNode {
 
     fn add_to_type_check(&self, compiler: &mut Compiler) -> Result<(), CompileError> {
         let my_type = self.my_type(compiler);
-        compiler
-            .variables_type
-            .insert(self.var_name.clone(), my_type.clone()?);
         if let Some(symbol) = compiler.lookup.symbols.get_mut(&self.var_name) {
             symbol.symbol_value_type = Some(my_type?);
             Ok(())
@@ -685,16 +680,20 @@ impl Compilable for VariableAccessNode {
     }
 
     fn my_type(&self, compiler: &mut Compiler) -> Result<ComptimeValueType, CompileError> {
-        let value_type = if let Some(var) = compiler.variables_type.get(&self.variable_name) {
-            var
+        if let Some(var) = compiler.context.get_variable(&self.variable_name) {
+            Ok(var.value_type.clone())
         } else if let Some(symbol) = compiler.lookup.symbols.get(&self.variable_name) {
-            &symbol.symbol_value_type.clone().unwrap()
+            symbol
+                .symbol_value_type
+                .clone()
+                .ok_or(CompileError::CannotInferType {
+                    name: self.variable_name.clone(),
+                })
         } else {
-            return Err(UndefinedVariable {
+            Err(UndefinedVariable {
                 name: self.variable_name.clone(),
-            });
-        };
-        Ok(value_type.clone())
+            })
+        }
     }
 }
 
