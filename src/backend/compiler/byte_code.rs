@@ -73,7 +73,6 @@ pub struct Compiler {
     pub macros: MacroManager,
     pub current_fn: String,
     pub lookup: GlobalSymbols,
-    pub function_types: HashMap<String, ComptimeValueType>,
     pub imports: Vec<String>,
     pub function_call_addresses: HashMap<String, Vec<usize>>,
 }
@@ -93,7 +92,6 @@ impl Compiler {
             lookup: GlobalSymbols {
                 symbols: HashMap::new(),
             },
-            function_types: HashMap::new(),
             imports: vec![],
             function_call_addresses: HashMap::new(),
         }
@@ -558,7 +556,14 @@ impl Compilable for VariableDefineNode {
             },
         )?;
 
-        let tag = &compiler.context.get_variable(&self.var_name).unwrap().tag;
+        //SAFETY:Its safe becouse we've just created the variable here
+        let tag = unsafe {
+            &compiler
+                .context
+                .get_variable(&self.var_name)
+                .unwrap_unchecked()
+                .tag
+        };
         compiler.out.push(Instructions::SaveVar(tag.clone()));
 
         Ok(Void)
@@ -595,13 +600,19 @@ impl Compilable for VariableDefineNode {
             Ok(())
         } else {
             Ok(()) // NOTE: We dont need to do anything here becouse we are just adding
-            // type to alredy existing symbol or just creating variabl
+            //type to alredy existing symbol or just creating variable
         }
     }
 
     fn my_type(&self, compiler: &mut Compiler) -> Result<ComptimeValueType, CompileError> {
         let inferred_type = if let Some(value) = &self.value {
             Some(value.my_type(compiler)?)
+        } else if self.value_type.is_some() {
+            Some(
+                compiler
+                    .context
+                    .get_type(&self.value_type.as_ref().unwrap())?,
+            )
         } else {
             None
         };
@@ -973,7 +984,8 @@ impl Compilable for ImportNode {
         */
         parsed_ast.add_to_lookup(compiler)?;
         parsed_ast.add_to_type_check(compiler)?;
-        compiler.imports.push(self.module.clone());
+        compiler.imports.push(self.module.clone()); //Normalized to lib.vtx, tools/lib.vtx etc.
+        //without the src/ prefix
         Ok(())
     }
 

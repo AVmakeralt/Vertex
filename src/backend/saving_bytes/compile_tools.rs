@@ -69,12 +69,12 @@ fn debug_print(tokens: &Vec<Token>, ast: Box<dyn Compilable>, instructions: &Vec
 /// //now you can do anything with the ObjFile
 /// ```
 pub fn compile_file_to_bytecode(
-    dir: String,
+    module_name: String,
     tokens: Vec<Token>,
     lexed_files: &HashMap<String, Vec<Token>>,
 ) -> ObjFile {
     let file_start = Instant::now();
-    let pb = create_spinner(format!("Compiling {}", dir));
+    let pb = create_spinner(format!("Compiling {}", module_name));
 
     /*
      * Parser
@@ -83,7 +83,7 @@ pub fn compile_file_to_bytecode(
 
     let mut parsed_ast = main_parser.parse().unwrap_or_else(|e| {
         pb.finish_and_clear();
-        println!("Error at {}:", &dir);
+        println!("Error at {}:", &module_name);
         println!("\x1b[1;31m{}\x1b[0m", e);
         process::exit(-2)
     });
@@ -95,7 +95,7 @@ pub fn compile_file_to_bytecode(
 
     if let Err(e) = parsed_ast.add_to_lookup(&mut compiler) {
         pb.finish_and_clear();
-        clrprintln!("$red|Error at:{}", &dir);
+        clrprintln!("$red|Error at:{}", &module_name);
         clrprintln!("$red|{}", e);
         process::exit(-3);
     }
@@ -110,7 +110,7 @@ pub fn compile_file_to_bytecode(
      */
     if let Err(e) = parsed_ast.compile(&mut compiler) {
         pb.finish_and_clear();
-        clrprintln!("$red|Error at $reset|:$cyan|{}", &dir);
+        clrprintln!("$red|Error at $reset|:$cyan|{}", &module_name);
         clrprintln!("$red|{}", e);
         println!("\x1b[1mTry:vertexC error <error code> for fix\x1b[0m");
         process::exit(-3);
@@ -119,13 +119,13 @@ pub fn compile_file_to_bytecode(
     pb.finish_and_clear();
     println!(
         "\x1b[32m✔\x1b[0m {:<50} in {:.4}s",
-        format!("Compiled {}", dir),
+        format!("Compiled {}", module_name),
         file_start.elapsed().as_secs_f32()
     );
 
     ObjFile {
         instructions: compiler.out,
-        name: dir.clone(),
+        name: module_name,
         imports: compiler.imports.clone(),
     }
 }
@@ -220,7 +220,7 @@ pub fn build_prj(dir: String, out: String, debug: bool, _vm_path: Option<PathBuf
             .get(&key)
             .unwrap_or_else(|| panic!("Token map missing key: {}", key))
             .clone();
-        objs.push(compile_file_to_bytecode(file, tokens, &tokens_map));
+        objs.push(compile_file_to_bytecode(key, tokens, &tokens_map));
     }
 
     /*

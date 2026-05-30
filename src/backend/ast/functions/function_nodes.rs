@@ -45,12 +45,6 @@ impl Compilable for FunctionDefineNode {
     }
 
     fn add_to_type_check(&self, compiler: &mut Compiler) -> Result<(), CompileError> {
-        compiler.function_types.insert(
-            self.id.clone(),
-            compiler
-                .context
-                .get_type(&self.return_type.clone().unwrap())?,
-        );
         Ok(())
     }
 
