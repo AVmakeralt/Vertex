@@ -3,7 +3,7 @@
 // Currently, it does not have a working linker. Once `apex` is ready, this tool will likely be replaced or deprecated and not be ready for
 // production.
 use std::env;
-use std::path::PathBuf;
+use tokio::runtime::Runtime;
 use vertex::backend::saving_bytes::compile_tools::build_prj;
 use vertex::backend::{
     errors::cli_errors::CommandLineError::{
@@ -29,7 +29,7 @@ fn main() {
 
 fn run_cli() -> Result<(), CommandLineError> {
     let args: Vec<String> = env::args().collect();
-
+    let rt = Runtime::new().unwrap();
     if args.len() < 2 {
         return Err(NoSuchCommand);
     }
@@ -37,7 +37,7 @@ fn run_cli() -> Result<(), CommandLineError> {
     match args[1].as_str() {
         "build" => {
             let (debug, source, output, path_to_vm) = parse_build_args(&args[2..])?;
-            build_prj(source, output, debug, Some(PathBuf::from(path_to_vm)));
+            rt.block_on(build_prj(source, output, debug));
             Ok(())
         }
         "run" => {
@@ -49,12 +49,7 @@ fn run_cli() -> Result<(), CommandLineError> {
         }
         "exec" => {
             let (debug, source, output, path_to_vm) = parse_build_args(&args[2..])?;
-            build_prj(
-                source.clone(),
-                output.clone(),
-                debug,
-                Some(PathBuf::from(path_to_vm)),
-            );
+            rt.block_on(build_prj(source.clone(), output.clone(), debug));
 
             println!("\n\x1b[1;32mRunning final bytecode\x1b[0m",);
             run_code(&format!("out/{}", &output));

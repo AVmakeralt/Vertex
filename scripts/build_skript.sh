@@ -1,4 +1,6 @@
 #!/bin/bash
+# This script is used to safely build releases for
+# github. It's not used for actually installing Vertex
 cargo clean
 cargo update
 cargo build --release

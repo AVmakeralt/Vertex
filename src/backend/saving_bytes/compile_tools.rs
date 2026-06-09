@@ -13,7 +13,6 @@ use crate::backend::{
 };
 use crate::clrprintln;
 use indicatif::{ProgressBar, ProgressStyle};
-use rayon::prelude::*;
 use std::collections::HashMap;
 use std::{
     fs,
@@ -57,17 +56,6 @@ fn debug_print(tokens: &Vec<Token>, ast: Box<dyn Compilable>, instructions: &Vec
         println!("{:?}", instruction);
     }
 }
-///This functions does compilation process of one single file. It creates tokens, build ast, create lookup for imported variables, updates types in type table, creates bytecode and optimizes it.
-/// # Returns
-/// Singular ObjFile
-/// # Example
-///```no_run
-/// use vertex::backend::saving_bytes::compile_tools::compile_file_to_bytecode;
-///
-/// let path = "src/main.vtx".to_string();
-/// let final_obj = compile_file_to_bytecode(path);
-/// //now you can do anything with the ObjFile
-/// ```
 pub fn compile_file_to_bytecode(
     module_name: String,
     tokens: Vec<Token>,
@@ -132,8 +120,7 @@ pub fn compile_file_to_bytecode(
 
 //NOTE:This is just entry point for the compilation process, and it
 //shouldn't be used any further in the compilation process
-pub fn build_prj(dir: String, out: String, debug: bool, _vm_path: Option<PathBuf>) {
-    ensure_target_dir();
+pub async fn build_prj(dir: String, out: String, debug: bool) {
     let total_start = Instant::now();
 
     let src_path = Path::new(&dir)
@@ -145,10 +132,10 @@ pub fn build_prj(dir: String, out: String, debug: bool, _vm_path: Option<PathBuf
         src_path.display(),
         out
     );
-
     /*
-     * Lexing phase
-     */
+     * File setup
+     * */
+    ensure_target_dir();
     let main_vtx_files = get_vertex_files_recursive(&dir);
     let mut files_to_lex = Vec::new();
 
@@ -160,51 +147,86 @@ pub fn build_prj(dir: String, out: String, debug: bool, _vm_path: Option<PathBuf
     // Add dependency files
     if is_config_set() {
         for (name, path) in get_modules() {
-            let dep_src = format!("{}/src", path);
-            for file in get_vertex_files_recursive(&dep_src) {
-                files_to_lex.push((file, dep_src.clone(), Some(name.clone())));
+            if !PathBuf::from(path).exists() {
+            } else {
+                let dep_src = format!("{}/src", path);
+                for file in get_vertex_files_recursive(&dep_src) {
+                    files_to_lex.push((file, dep_src.clone(), Some(name.clone())));
+                }
             }
         }
     }
 
-    let tokens_map: HashMap<String, Vec<Token>> = files_to_lex
-        .par_iter()
-        .map(|(file, base_dir, prefix)| {
+    /*
+     * Lexing Phase
+     * */
+    let mut tokens_map: HashMap<String, Vec<Token>> = HashMap::new();
+    let mut lexer_join_set = tokio::task::JoinSet::new();
+
+    for (file, base_dir, prefix) in files_to_lex {
+        lexer_join_set.spawn(async move {
             let content =
-                fs::read_to_string(file).unwrap_or_else(|_| panic!("Cannot find module {}", file));
-            let main_lexer: Lexer = Lexer::new(content);
+                fs::read_to_string(&file).unwrap_or_else(|_| panic!("Cannot find module {}", file));
+            let main_lexer: Lexer = Lexer::new(content.clone());
+            let result = main_lexer.tokenize();
+            (file, base_dir, prefix, content, result)
+        });
+    }
 
-            let tokens: Vec<Token> = match main_lexer.tokenize() {
-                Err(e) => {
-                    clrprintln!("$red|Error at {}:", file);
-                    print_lexer_err(e, fs::read_to_string(file).unwrap());
-                    process::exit(-1);
-                }
-                Ok(tokens) => tokens,
-            };
+    while let Some(res) = lexer_join_set.join_next().await {
+        let (file, base_dir, prefix, content, result) = res.unwrap();
+        match result {
+            Err(e) => {
+                clrprintln!("$red|Error at {}:", file);
+                print_lexer_err(e, content);
+                process::exit(-1);
+            }
+            Ok(tokens) => {
+                // Remove any prefix from the file name so we can reference it like this
+                // `
+                // use "any/file/in/src"
+                // `
+                let rel_path = if file.starts_with(&base_dir) {
+                    file.strip_prefix(&base_dir)
+                        .unwrap()
+                        .trim_start_matches('/')
+                        .to_string()
+                } else {
+                    file.clone()
+                };
 
-            // Normalize key
-            let rel_path = if file.starts_with(base_dir) {
-                file.strip_prefix(base_dir)
-                    .unwrap()
-                    .trim_start_matches('/')
-                    .to_string()
-            } else {
-                file.clone()
-            };
+                // If file is imported as
+                // `
+                //[dependencies]
+                //math = "path/to/lib"
+                // `
+                // in prj.toml
+                // The key will be math/file/in/src
+                let key = match prefix {
+                    Some(p) => format!("{}/{}", p, rel_path),
+                    None => rel_path,
+                };
 
-            let key = match prefix {
-                Some(p) => format!("{}/{}", p, rel_path),
-                None => rel_path,
-            };
-
-            (key, tokens)
-        })
-        .collect();
+                tokens_map.insert(key, tokens);
+            }
+        }
+    }
 
     /*
-     * Compile phase
-     */
+     * Parsing phase
+     * */
+    let mut parser_join_set = tokio::task::JoinSet::new();
+    for lexed_file in tokens_map.clone() {
+        parser_join_set.spawn(async move {
+            let mut main_parser = Parser::new(lexed_file.1.to_vec());
+            main_parser.parse()
+        });
+    }
+
+    /*
+     * Compile Phase
+     * */
+
     let mut objs: Vec<ObjFile> = Vec::new();
 
     for file in main_vtx_files {

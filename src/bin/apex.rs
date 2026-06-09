@@ -7,6 +7,7 @@ use std::{
     io::Write,
     process,
 };
+use tokio::runtime::Runtime;
 use vertex::{
     backend::{
         errors::cli_errors::CommandLineError,
@@ -29,6 +30,7 @@ fn main() {
 
 fn run_cli() -> Result<(), CommandLineError> {
     let args: Vec<String> = env::args().collect();
+    let rt = Runtime::new().unwrap();
 
     if args.is_empty() {
         return Err(CommandLineError::InvalidCommand);
@@ -100,7 +102,8 @@ $green|DESCRIPTION:$reset|
                     clrprintln!("$red|Linker error -> Cannot find main.vtx in ./src");
                     process::exit(-1);
                 });
-                build_prj("src/".to_string(), config.name, debug, None)
+
+                rt.block_on(build_prj("src/".to_string(), config.name, debug))
             }
             "clear" => remove_dir_all("./out").unwrap(),
             _ => return Err(CommandLineError::NoSuchCommand),

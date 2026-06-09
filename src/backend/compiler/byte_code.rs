@@ -47,7 +47,7 @@ where
         Box::new(self.clone())
     }
 }
-pub trait Compilable: Debug + CompilableClone {
+pub trait Compilable: Debug + CompilableClone + Send + Sync {
     fn compile(&mut self, compiler: &mut Compiler) -> Result<ComptimeValueType, CompileError>;
     fn fmt_with_indent(&self, f: &mut Formatter<'_>, indent: usize) -> fmt::Result;
     fn add_to_lookup(&self, compiler: &mut Compiler) -> Result<(), CompileError>;
