@@ -7,7 +7,6 @@ use crate::backend::{
             ProgramNode, ReturnNode, StringNode, VariableAccessNode, VariableAssignNode,
             VariableDefineNode,
         },
-        parser::Parser,
     },
     buildin_macros::get_macro::MacroManager,
     compiler::{
@@ -33,7 +32,6 @@ use CompileError::ConstantWithoutValue;
 use std::{
     collections::HashMap,
     fmt::{self, Debug, Formatter},
-    process,
 };
 pub trait CompilableClone {
     fn clone_box(&self) -> Box<dyn Compilable>;
@@ -960,25 +958,13 @@ impl Compilable for ImportNode {
     }
 
     fn add_to_lookup(&self, compiler: &mut Compiler) -> Result<(), CompileError> {
-        /*
-         * Lexer
-         */
-        let tokens = compiler
+        let parsed_ast = compiler
             .context
-            .lexed_files
+            .parsed_files
             .get(&self.module)
-            .unwrap_or_else(|| panic!("Cannot find module {}", self.module))
-            .to_vec();
+            .unwrap_or_else(|| panic!("Cannot find pre-parsed module {}", self.module))
+            .clone();
 
-        /*
-         * Parser
-         */
-        let mut main_parser: Parser = Parser::new(tokens);
-        let parsed_ast = main_parser.parse().unwrap_or_else(|e| {
-            println!("Error at {}:", &self.module);
-            println!("\x1b[1;31m{}\x1b[0m", e);
-            process::exit(-2)
-        });
         /*
         Lookup and type check
         */

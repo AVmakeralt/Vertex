@@ -5,8 +5,11 @@ edition = "2021"
 
 [profile.release]
 panic = "abort"
+[profile.debug]
+panic = "abort"
+
 [lib]
-crate-type = ["staticlib"]  
+crate-type = ["staticlib"]
 
 [dependencies]
 vertex = { path = "../../" }

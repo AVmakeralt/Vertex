@@ -6,5 +6,5 @@ fnc fib(i:int):int{
         return (fib(i-1)+fib(i-2));
     }
 }
-var res = fib(6);
+var res = fib(30);
 writeLn!(res);

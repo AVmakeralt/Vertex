@@ -9,6 +9,7 @@ use crate::backend::lexer::tokens::Token;
 use std::collections::HashMap;
 use crate::backend::ast::statements::structs::ComptimeStructForCheck;
 use crate::tools::custom_truncate::truncate_and_return;
+use crate::backend::compiler::byte_code::Compilable;
 pub struct CompileContext {
     variables: HashMap<String, ComptimeVariable>,
     pub functions: HashMap<String, CompileTimeFunctionForCheck>,
@@ -17,7 +18,7 @@ pub struct CompileContext {
     pub function_depth: usize,
     pub current_return_type: ComptimeValueType,
     pub current_function_vars: Vec<ComptimeVariable>,
-    pub lexed_files: HashMap<String, Vec<Token>>,
+    pub parsed_files: HashMap<String, Box<dyn Compilable>>,
     is_in_function_contex: bool,
     last_fn_context: usize,
     types: Vec<String>,
@@ -36,7 +37,7 @@ impl CompileContext {
             is_in_function_contex: false,
             last_fn_context: 0,
             function_depth: 0,
-            lexed_files: HashMap::new(),
+            parsed_files: HashMap::new(),
         }
     }
     pub fn is_in_function_contex(&self) -> bool {

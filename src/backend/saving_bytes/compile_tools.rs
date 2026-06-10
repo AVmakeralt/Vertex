@@ -58,28 +58,24 @@ fn debug_print(tokens: &Vec<Token>, ast: Box<dyn Compilable>, instructions: &Vec
 }
 pub fn compile_file_to_bytecode(
     module_name: String,
-    tokens: Vec<Token>,
-    lexed_files: &HashMap<String, Vec<Token>>,
+    parsed_files: HashMap<String, Box<dyn Compilable>>,
 ) -> ObjFile {
     let file_start = Instant::now();
     let pb = create_spinner(format!("Compiling {}", module_name));
 
     /*
-     * Parser
+     * AST Retrieval
      */
-    let mut main_parser: Parser = Parser::new(tokens);
+    let mut parsed_ast = parsed_files
+        .get(&module_name)
+        .unwrap_or_else(|| panic!("AST missing for module: {}", module_name))
+        .clone();
 
-    let mut parsed_ast = main_parser.parse().unwrap_or_else(|e| {
-        pb.finish_and_clear();
-        println!("Error at {}:", &module_name);
-        println!("\x1b[1;31m{}\x1b[0m", e);
-        process::exit(-2)
-    });
     /*
      * Lookup
      */
     let mut compiler = Compiler::new();
-    compiler.context.lexed_files = lexed_files.clone();
+    compiler.context.parsed_files = parsed_files;
 
     if let Err(e) = parsed_ast.add_to_lookup(&mut compiler) {
         pb.finish_and_clear();
@@ -118,37 +114,21 @@ pub fn compile_file_to_bytecode(
     }
 }
 
-//NOTE:This is just entry point for the compilation process, and it
-//shouldn't be used any further in the compilation process
-pub async fn build_prj(dir: String, out: String, debug: bool) {
-    let total_start = Instant::now();
-
-    let src_path = Path::new(&dir)
-        .canonicalize()
-        .unwrap_or_else(|_| std::path::PathBuf::from(&dir));
-
-    println!(
-        "\n\x1b[1;32mBuilding\x1b[0m {} -> out/{}\n",
-        src_path.display(),
-        out
-    );
-    /*
-     * File setup
-     * */
-    ensure_target_dir();
-    let main_vtx_files = get_vertex_files_recursive(&dir);
+async fn lex_project_parallel(
+    dir: &String,
+    main_vtx_files: &Vec<String>,
+) -> HashMap<String, Vec<Token>> {
     let mut files_to_lex = Vec::new();
 
     // Add main project files
-    for file in &main_vtx_files {
+    for file in main_vtx_files {
         files_to_lex.push((file.clone(), dir.clone(), None));
     }
 
     // Add dependency files
     if is_config_set() {
         for (name, path) in get_modules() {
-            if !PathBuf::from(path).exists() {
-            } else {
+            if PathBuf::from(path).exists() {
                 let dep_src = format!("{}/src", path);
                 for file in get_vertex_files_recursive(&dep_src) {
                     files_to_lex.push((file, dep_src.clone(), Some(name.clone())));
@@ -157,9 +137,6 @@ pub async fn build_prj(dir: String, out: String, debug: bool) {
         }
     }
 
-    /*
-     * Lexing Phase
-     * */
     let mut tokens_map: HashMap<String, Vec<Token>> = HashMap::new();
     let mut lexer_join_set = tokio::task::JoinSet::new();
 
@@ -182,10 +159,6 @@ pub async fn build_prj(dir: String, out: String, debug: bool) {
                 process::exit(-1);
             }
             Ok(tokens) => {
-                // Remove any prefix from the file name so we can reference it like this
-                // `
-                // use "any/file/in/src"
-                // `
                 let rel_path = if file.starts_with(&base_dir) {
                     file.strip_prefix(&base_dir)
                         .unwrap()
@@ -195,13 +168,6 @@ pub async fn build_prj(dir: String, out: String, debug: bool) {
                     file.clone()
                 };
 
-                // If file is imported as
-                // `
-                //[dependencies]
-                //math = "path/to/lib"
-                // `
-                // in prj.toml
-                // The key will be math/file/in/src
                 let key = match prefix {
                     Some(p) => format!("{}/{}", p, rel_path),
                     None => rel_path,
@@ -211,22 +177,71 @@ pub async fn build_prj(dir: String, out: String, debug: bool) {
             }
         }
     }
+    tokens_map
+}
 
-    /*
-     * Parsing phase
-     * */
+async fn parse_project_parallel(
+    tokens_map: &HashMap<String, Vec<Token>>,
+) -> HashMap<String, Box<dyn Compilable>> {
     let mut parser_join_set = tokio::task::JoinSet::new();
-    for lexed_file in tokens_map.clone() {
+    let mut parsed_ast_map: HashMap<String, Box<dyn Compilable>> = HashMap::new();
+
+    for (file_name, tokens) in tokens_map {
+        let tokens_clone = tokens.clone();
+        let name_clone = file_name.clone();
         parser_join_set.spawn(async move {
-            let mut main_parser = Parser::new(lexed_file.1.to_vec());
-            main_parser.parse()
+            let mut main_parser = Parser::new(tokens_clone);
+            (name_clone, main_parser.parse())
         });
     }
 
+    while let Some(res) = parser_join_set.join_next().await {
+        let (file_name, parsed_file) = res.unwrap();
+        match parsed_file {
+            Err(e) => {
+                println!("Error at {}:", &file_name);
+                println!("\x1b[1;31m{}\x1b[0m", e);
+                process::exit(-2);
+            }
+            Ok(ast) => {
+                parsed_ast_map.insert(file_name, ast);
+            }
+        }
+    }
+    parsed_ast_map
+}
+
+//NOTE:This is just entry point for the compilation process, and it
+//shouldn't be used any further in the compilation process
+pub async fn build_prj(dir: String, out: String, debug: bool) {
+    let total_start = Instant::now();
+
+    let src_path = Path::new(&dir)
+        .canonicalize()
+        .unwrap_or_else(|_| std::path::PathBuf::from(&dir));
+
+    println!(
+        "\n\x1b[1;32mBuilding\x1b[0m {} -> out/{}\n",
+        src_path.display(),
+        out
+    );
+
+    ensure_target_dir();
+    let main_vtx_files = get_vertex_files_recursive(&dir);
+
+    /*
+     * Lexing phase
+     */
+    let tokens_map = lex_project_parallel(&dir, &main_vtx_files).await;
+
+    /*
+     * Parsing phase
+     */
+    let parsed_ast_map = parse_project_parallel(&tokens_map).await;
+
     /*
      * Compile Phase
-     * */
-
+     */
     let mut objs: Vec<ObjFile> = Vec::new();
 
     for file in main_vtx_files {
@@ -238,17 +253,13 @@ pub async fn build_prj(dir: String, out: String, debug: bool) {
         } else {
             file.clone()
         };
-        let tokens = tokens_map
-            .get(&key)
-            .unwrap_or_else(|| panic!("Token map missing key: {}", key))
-            .clone();
-        objs.push(compile_file_to_bytecode(key, tokens, &tokens_map));
+
+        objs.push(compile_file_to_bytecode(key, parsed_ast_map.clone()));
     }
 
     /*
      * Linking
      */
-
     let pb_linking = create_spinner("Linking".to_string());
     let link_start = Instant::now();
     let mut final_file = Linker::link(&mut objs); // Link all Obj files
@@ -290,9 +301,6 @@ pub async fn build_prj(dir: String, out: String, debug: bool) {
 
     binary_compilation::compile_to_binary(&out);
 
-    /*
-     * TOTAL TIME
-     */
     println!(
         "\n\x1b[1;32mBuild finished\x1b[0m in {:.3}s",
         total_start.elapsed().as_secs_f32()
